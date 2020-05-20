@@ -1,3 +1,7 @@
+# Project-specific
+videos/
+developer_key.py
+
 # OS generated files #
 ######################
 .DS_Store
