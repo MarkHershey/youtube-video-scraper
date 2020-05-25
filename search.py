@@ -6,13 +6,23 @@
 
 import os
 import json
+import logging
 
 import googleapiclient.discovery
 
 from developer_key import KEY
 
+# logger = logging.getLogger("ROOT")
+# logging.basicConfig(level=logging.DEBUG)
 
-def videoListBySearch(search_string):
+
+def videoListBySearch(
+    search_string: str, NumberOfVideo: int = 50, regionCode: str = "US"
+) -> dict:
+    # Get logger
+    logger = logging.getLogger("videoListBySearch")
+    logging.basicConfig(level=logging.INFO)
+
     # Disable OAuthlib's HTTPS verification when running locally.
     # *DO NOT* leave this option enabled in production.
     os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
@@ -25,35 +35,83 @@ def videoListBySearch(search_string):
         api_service_name, api_version, developerKey=DEVELOPER_KEY
     )
 
-    request = youtube.search().list(
-        part="snippet",
-        order="relevance",
-        q=search_string,
-        safeSearch="none",
-        type="video",
-        videoDefinition="any",
-        maxResults=50,
-    )
-    response = request.execute()
+    if type(NumberOfVideo) != int:
+        raise TypeError("NumberOfVideo must be an integer.")
+    elif NumberOfVideo <= 0:
+        raise ValueError("NumberOfVideo must be a positive integer.")
+    elif 0 < NumberOfVideo <= 50:
+        maxResults = NumberOfVideo
+        pages = 1
+    elif 50 < NumberOfVideo <= 10000:
+        maxResults = 50
+        if NumberOfVideo % 50 == 0:
+            pages = int(NumberOfVideo // 50)
+        else:
+            pages = int(NumberOfVideo // 50) + 1
+    else:
+        raise ValueError("NumberOfVideo must less than 10000.")
 
-    items = response["items"]
+    video_lst = dict()
+    nextPageToken = ""
 
-    video_lst = []
+    while pages > 0:
 
-    for i in items:
-        id = i["id"]["videoId"]
-        video_url = "https://www.youtube.com/watch?v=" + id
-        video_title = i["snippet"]["title"]
-        video_lst.append((id, video_url, video_title))
+        logger.info("Calling YouTube Search API")
+        request = youtube.search().list(
+            part="snippet",
+            order="relevance",
+            q=search_string,
+            safeSearch="none",
+            type="video",
+            videoDefinition="any",
+            maxResults=maxResults,
+            pageToken=nextPageToken,
+            regionCode=regionCode,
+        )
+        response = request.execute()
 
-    with open("video_lst.json", "w") as output:
+        try:
+            nextPageToken = response["nextPageToken"]
+            pages -= 1
+        except:
+            logger.error("No more next page")
+            pages = 0
+
+        items = response["items"]
+
+        for i in items:
+            id = i["id"]["videoId"]
+            url = "https://www.youtube.com/watch?v=" + id
+            title = i["snippet"]["title"]
+            publishTime = i["snippet"]["publishTime"]
+            channelTitle = i["snippet"]["channelTitle"]
+            channelId = i["snippet"]["channelId"]
+
+            logger.info(f"Getting Video: {title}")
+
+            video_lst[id] = {
+                "title": title,
+                "url": url,
+                "id": id,
+                "publishTime": publishTime,
+                "channelTitle": channelTitle,
+                "channelId": channelId,
+            }
+
+    output_name = ""
+    for i in search_string:
+        if i == " ":
+            output_name += "_"
+        else:
+            output_name += i
+
+    with open(f"video_lst_{output_name}_{regionCode}.json", "w") as output:
         json.dump(video_lst, output, indent=4)
 
+    logger.info(f"Search result saved in: 'video_lst_{output_name}_{regionCode}.json'")
     return video_lst
 
 
 if __name__ == "__main__":
-    search_string = "car crash compilation"
-    video_lst = videoListBySearch(search_string)
-    for index, video in enumerate(video_lst):
-        print(f"{index+1} - {video[2]}")
+    search_string = "road accident video footage"
+    video_lst = videoListBySearch(search_string, 300, "SG")
