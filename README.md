@@ -26,3 +26,8 @@ YouTube Video Scraper using YouTube API & youtube-dl
 
 - Usage:
 `python3 url_download.py https://www.youtube.com/watch?v=gHtrPzhKEhk`
+
+
+### `merge.py` merges all video lists into one list to eliminate duplication.
+
+- It merges all `video_lst_xxxxx.json` in the current directory into one `merged_video_lst.json`.

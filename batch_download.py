@@ -9,7 +9,7 @@ import os
 cwd = os.path.dirname(os.path.abspath(__file__))
 
 
-def download(video_lst: list, aria=False, threads="8", debug=False):
+def download(video_lst: dict, aria=False, threads="8", debug=False):
 
     # Clear cache for youtube-dl
     # Enable this when you encounter some error with youtube-dl
