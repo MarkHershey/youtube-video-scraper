@@ -18,10 +18,10 @@ def download(video_lst: list, aria=False, threads="8", debug=False):
             ["youtube-dl", "--rm-cache-dir",]
         )
 
-    for index, video in enumerate(video_lst):
-        id = video[0]
-        url = video[1]
-        title = video[2]
+    for index, video in enumerate(video_lst.values()):
+        id = video["id"]
+        url = video["url"]
+        title = video["title"]
 
         template = cwd + "/videos/%(id)s.%(ext)s"
 
@@ -33,7 +33,7 @@ def download(video_lst: list, aria=False, threads="8", debug=False):
                     "-o",
                     template,
                     "-f",
-                    "best[ext=mp4]/best",
+                    "best[ext=mp4][height<=1080]/best[height<=1080]",
                     "--external-downloader",
                     "aria2c",
                     "--external-downloader-args",
@@ -52,4 +52,4 @@ if __name__ == "__main__":
         video_lst = json.load(file)
 
     # call download
-    download(video_lst, aria=False, debug=False)
+    download(video_lst, aria=True, debug=False)
