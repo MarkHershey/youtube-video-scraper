@@ -7,13 +7,94 @@
 import os
 import json
 import logging
+from pathlib import Path
 
 import googleapiclient.discovery
 
 from developer_key import KEY
 
-# logger = logging.getLogger("ROOT")
-# logging.basicConfig(level=logging.DEBUG)
+
+def videoListByChannel(channelId: str) -> dict:
+    # Get logger
+    logger = logging.getLogger("videoListByChannel")
+    # logging.basicConfig(level=logging.INFO)
+
+    # Disable OAuthlib's HTTPS verification when running locally.
+    # *DO NOT* leave this option enabled in production.
+    os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
+
+    api_service_name = "youtube"
+    api_version = "v3"
+    DEVELOPER_KEY = KEY
+
+    youtube = googleapiclient.discovery.build(
+        api_service_name, api_version, developerKey=DEVELOPER_KEY
+    )
+
+    video_lst = dict()
+    nextPageToken = ""
+
+    while nextPageToken is not None:
+
+        logger.info("Calling YouTube Search API")
+        request = youtube.search().list(
+            part="snippet",
+            channelId=channelId,
+            safeSearch="none",
+            type="video",
+            videoDefinition="any",
+            order="date",
+            maxResults=50,
+            pageToken=nextPageToken,
+        )
+        response = request.execute()
+
+        try:
+            nextPageToken = response["nextPageToken"]
+        except:
+            nextPageToken = None
+            logger.info("No more next page")
+
+        items = response["items"]
+
+        for i in items:
+            id = i["id"]["videoId"]
+            url = "https://www.youtube.com/watch?v=" + id
+            title = i["snippet"]["title"]
+            publishTime = i["snippet"]["publishTime"]
+            channelTitle = i["snippet"]["channelTitle"]
+            channelId = i["snippet"]["channelId"]
+
+            print(f"Getting Video: {title}")
+
+            video_lst[id] = {
+                "title": title,
+                "url": url,
+                "id": id,
+                "publishTime": publishTime,
+                "channelTitle": channelTitle,
+                "channelId": channelId,
+            }
+
+    channelTitle: str = ""
+    for video in video_lst.values():
+        channelTitle = video["channelTitle"]
+        break
+
+    output_name: str = ""
+    for i in channelTitle:
+        if i == " ":
+            output_name += "_"
+        else:
+            output_name += i
+
+    output_path = "video_lists" / Path(f"channel_video_lst_{output_name}.json")
+
+    with output_path.open(mode="w") as output:
+        json.dump(video_lst, output, indent=4)
+
+    print(f"Search result saved in: '{output_path}'")
+    return video_lst
 
 
 def videoListBySearch(
@@ -21,7 +102,7 @@ def videoListBySearch(
 ) -> dict:
     # Get logger
     logger = logging.getLogger("videoListBySearch")
-    logging.basicConfig(level=logging.INFO)
+    # logging.basicConfig(level=logging.INFO)
 
     # Disable OAuthlib's HTTPS verification when running locally.
     # *DO NOT* leave this option enabled in production.
@@ -74,7 +155,7 @@ def videoListBySearch(
             nextPageToken = response["nextPageToken"]
             pages -= 1
         except:
-            logger.error("No more next page")
+            logger.info("No more next page")
             pages = 0
 
         items = response["items"]
@@ -87,7 +168,7 @@ def videoListBySearch(
             channelTitle = i["snippet"]["channelTitle"]
             channelId = i["snippet"]["channelId"]
 
-            logger.info(f"Getting Video: {title}")
+            print(f"Getting Video: {title}")
 
             video_lst[id] = {
                 "title": title,
@@ -105,13 +186,29 @@ def videoListBySearch(
         else:
             output_name += i
 
-    with open(f"video_lst_{output_name}_{regionCode}.json", "w") as output:
+    output_path = "video_lists" / Path(f"video_lst_{output_name}_{regionCode}.json")
+
+    with output_path.open(mode="w") as output:
         json.dump(video_lst, output, indent=4)
 
-    logger.info(f"Search result saved in: 'video_lst_{output_name}_{regionCode}.json'")
+    print(f"Search result saved in: '{output_path}'")
     return video_lst
 
 
 if __name__ == "__main__":
-    search_string = "road accident video footage"
-    video_lst = videoListBySearch(search_string, 300, "SG")
+    pass
+    # search_string = "road accident video footage"
+    # video_lst = videoListBySearch(search_string, 300, "SG")
+
+    ##########################################################################
+    # from pathlib import Path
+    #
+    # channel_lst = Path(
+    #     "/Users/mark/Documents/CODE/youtube-video-scraper/channel_lst.md"
+    # )
+    # with channel_lst.open() as file:
+    #     channels = file.readlines()
+    #
+    #     for channelId in channels:
+    #         videoListByChannel(channelId)
+    ##########################################################################
