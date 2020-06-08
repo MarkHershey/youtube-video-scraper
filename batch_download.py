@@ -5,25 +5,52 @@
 import subprocess
 import json
 import os
+from pathlib import Path
 
-cwd = os.path.dirname(os.path.abspath(__file__))
 
-
-def download(video_lst: dict, aria=False, threads="8", debug=False):
+def download(
+    video_lst: dict,
+    aria: bool = False,
+    threads: int = 8,
+    output_path: str = "cwd",
+    clear_cache: bool = False,
+):
 
     # Clear cache for youtube-dl
     # Enable this when you encounter some error with youtube-dl
-    if debug:
+    if clear_cache:
         subprocess.call(
             ["youtube-dl", "--rm-cache-dir",]
         )
+
+    if isinstance(threads, int):
+        threads = str(threads)
+    elif isinstance(threads, str) and threads.isdigit():
+        try:
+            threads = int(threads)
+            threads = str(threads)
+        except:
+            print("threads should be a integer")
+            return
+    else:
+        return
+
+    if output_path == "cwd":
+        base_path = str(Path.cwd())
+    else:
+        base_path = Path(output_path)
+        if base_path.is_dir():
+            base_path = str(base_path)
+        else:
+            print("Invalid output_path")
+            return
 
     for index, video in enumerate(video_lst.values()):
         id = video["id"]
         url = video["url"]
         title = video["title"]
 
-        template = cwd + "/videos/%(id)s.%(ext)s"
+        template = base_path + "/videos/%(id)s.%(ext)s"
 
         print(f"\n---------------<Video: {index + 1} >---------------")
         if aria:
@@ -48,8 +75,8 @@ def download(video_lst: dict, aria=False, threads="8", debug=False):
 
 
 if __name__ == "__main__":
-    with open("test.json", "r") as file:
+    with open("merged_video_lst_from_six_channels.json", "r") as file:
         video_lst = json.load(file)
 
     # call download
-    download(video_lst, aria=True, debug=False)
+    download(video_lst, aria=True, output_path="/Volumes/MARK_HFS+_2T/UROP/verified")
