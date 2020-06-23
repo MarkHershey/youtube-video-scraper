@@ -41,7 +41,4 @@ def generate_config_template(dir: str, export_path: str = "config.txt"):
 
 
 if __name__ == "__main__":
-    generate_config_template(
-        dir="/Volumes/MARK_HFS+_2T/UROP/verified/videos",
-        export_path="/Volumes/MARK_HFS+_2T/UROP/verified/config.txt",
-    )
+    generate_config_template(dir="PATH/TO/YOUR/VIDEO/FOLDER",)
