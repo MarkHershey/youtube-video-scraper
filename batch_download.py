@@ -75,8 +75,12 @@ def download(
 
 
 if __name__ == "__main__":
-    with open("merged_video_lst_from_six_channels.json", "r") as file:
+
+    """REPLACE ME"""
+    video_list_file = "video_lists/channel_video_lst_DDS_TV.json"
+
+    with open(video_list_file, "r") as file:
         video_lst = json.load(file)
 
     # call download
-    download(video_lst, aria=True, output_path="/Volumes/MARK_HFS+_2T/UROP/verified")
+    download(video_lst, aria=True, output_path="cwd")
